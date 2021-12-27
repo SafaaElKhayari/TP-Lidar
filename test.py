@@ -15,6 +15,7 @@ fake_data = [[12, 0, 3.2141, 0.6925, 66.8928, 255.0, 255.0, 255.0],
              [5376, 499, -0.1022, -0.0030, -0.2184, 86.0, 86.0, 86.0]]
 
 np_data = np.array(fake_data)
+
 # matrix of rotation
 
 
@@ -57,5 +58,26 @@ def random_points(data):
     return random_rows
 
 
+# test results
 result = random_points(np_data)
 print(result)
+
+
+# collinearity
+
+def Test_Collinearity(pts):
+    # vectors
+    v1 = pts[1] - pts[0]
+    v2 = pts[2] - pts[0]
+    # scalar product
+    P = np.dot(v1, v2)
+    # norms :
+    n1 = np.linalg.norm(v1)
+    n2 = np.linalg.norm(v2)
+    # alpha
+    alpha = round(m.acos(P/(n1*n2), 4))
+    # test collinearity
+    if (m.isclose(alpha, 0)):
+        return False
+
+    return True
