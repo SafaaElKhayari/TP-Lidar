@@ -5,6 +5,7 @@ import pandas as pd
 
 # bras de levier & matrice de rotation
 bras_levier = [0.14, 0.249, -0.076]
+
 # matrice de rotation
 matrice_rotation = [[0, -1, 0], [1, 0, 0], [0, 0, 1]]
 
@@ -36,16 +37,15 @@ def Rz(theta):
                      [m.sin(theta), m.cos(theta), 0],
                      [0, 0, 1]])
 
-# main function
+# georeferencing
 
 
 def convert_to_cart_coord(GPS_data, scanner_data):
-    rotation_matrix = Rx(scanner_data[:, 5]) * \
-        Ry(scanner_data[:, 6]) * Rz(scanner_data[:, 7])
+    rotation_matrix = Rx(GPS_data[:, 8]) * \
+        Ry(GPS_data[:, 9]) * Rz(GPS_data[:, 10])
 
     coord = GPS_data[:, 2:5] + rotation_matrix * \
         (bras_levier + matrice_rotation * scanner_data[:, 2:5])
-
     return coord
 
 
