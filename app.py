@@ -1,6 +1,7 @@
 import tkinter as tk             # This has all the code for GUIs.
 import tkinter.font as font      # This lets us use different fonts.
 from tkinter import ttk
+from tkinter.filedialog import askopenfilenames
 
 
 def center_window_on_screen():
@@ -10,9 +11,12 @@ def center_window_on_screen():
 
 
 def import_scanner():
-    """
-    :return: Nothing
-    """
+    files = askopenfilenames(filetypes=(('Text files', '*.txt'),
+                                        ('All files', '*.*')),
+                             title='Select Input File'
+                             )
+    fileList = root.tk.splitlist(files)
+    print('Files = ', fileList)
 
 
 def import_GPS():
@@ -205,7 +209,7 @@ btn_georef.pack(pady=20)
 # georef frame
 
 lbl_vis3D = tk.Label(geoRef_frame,
-                     text='Visualization 3D',
+                     text='Georeferencing',
                      font=font_large)
 lbl_vis3D.pack(pady=20)
 lbl_vis3D.pack(pady=20)
@@ -223,5 +227,25 @@ btn_back.pack(pady=20)
 # the start frame needs to be shown when the program starts.
 
 start_frame.pack(fill='both', expand=1)
+
+menubar = tk.Menu(root)
+filemenu = tk.Menu(menubar, tearoff=0)
+filemenu.add_command(label="Import scanner data ", command=import_scanner)
+filemenu.add_command(label="Import Gps data", command=import_GPS)
+filemenu.add_separator()
+filemenu.add_command(label="Exit", command=root.quit)
+
+
+menubar.add_cascade(label="File", menu=filemenu)
+editmenu = tk.Menu(menubar, tearoff=0)
+
+editmenu.add_command(label="data visualization", command=visualize3D)
+editmenu.add_separator()
+editmenu.add_command(
+    label="georeferenced data visualization ", command=visualize3D)
+menubar.add_cascade(label="Visualization", menu=editmenu)
+
+
+root.config(menu=menubar)
 
 root.mainloop()
