@@ -1,6 +1,18 @@
+import math as m
+import os
+import numpy as np
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from matplotlib.figure import Figure
 import tkinter as tk             # This has all the code for GUIs.
 import tkinter.font as font      # This lets us use different fonts.
 from tkinter import ttk
+from tkinter.filedialog import askopenfile, askopenfilenames
+import matplotlib
+matplotlib.use("TkAgg")
+
+scanner_files = tuple()
+gps_file = str()
+preprocessed = []
 
 
 def center_window_on_screen():
@@ -10,15 +22,139 @@ def center_window_on_screen():
 
 
 def import_scanner():
-    """
-    :return: Nothing
-    """
+    global scanner_files
+    scanner_files = open_multiple_files()
+    e1.insert(0, ", ".join(scanner_files))
 
 
 def import_GPS():
+    global gps_file
+    gps_file = open_file()
+    e2.insert(0, gps_file.name)
+
+
+def open_multiple_files():
+    return askopenfilenames(parent=root)
+
+
+def open_file():
+    return askopenfile(mode='r')
+
+
+def plot(data):
+    x = data[:, 1]
+    y = data[:, 2]
+    z = data[:, 3]
+
+    fig = Figure(figsize=(10, 10))
+    a = fig.add_subplot(111, projection="3d")
+    a.scatter(x, y, z, c=z, cmap="rainbow")
+
+    a.set_title("3D plot")
+    a.set_xlabel('x-axis')
+    a.set_ylabel('y-axis')
+    a.set_zlabel('z-axis')
+    a.view_init(None, 120)
+
+    canvas = FigureCanvasTkAgg(fig, master=root)
+    canvas.get_tk_widget().pack()
+    canvas.draw()
+
+
+def load_data():
+    data = list()
+
+    for filename in scanner_files:
+        data.append(np.loadtxt(filename))
+
+    return data
+
+
+def load_gps():
+    return np.loadtxt(gps_file.name, skiprows=1)
+
+
+def preprocess():
+    global preprocessed
+    data = load_data()
+    for i in range(len(data)):
+        data[i][:, 0] = data[i][:, 0] + (i * 538)
+
+    merged = data[0]
+    for file_input in data[1:]:
+        merged = np.concatenate((merged, file_input))
+
+    merged = merged[np.lexsort((merged[:, 0], merged[:, 1]))]
+
+    # We keep only 4 columns: (profile, X, Y, Z)
+
+    merged = merged[:, 1:5]
+
+    preprocessed = merged
+    return merged
+
+
+def georeference():
+    preprocess()
+    translation_vector = np.array([0.14, 0.249, -0.076])
+    rotation_matrix = np.array([[0, -1, 0], [1, 0, 0], [0, 0, 1]])
+
+    result = np.empty((preprocessed.shape[0], 4))
+    for i in range(preprocessed.shape[0]):
+        result[i] = np.array(
+            [preprocessed[i][0], *(rotation_matrix.dot(preprocessed[i][1:]) + translation_vector)])
+
+    gps_result = np.empty((result.shape[0], 4))
+
+    counter = 0
+
+    for i in range(500):
+        # Get data from GPS
+
+        gps = load_gps()
+
+        angles = np.array(gps[i, 7:10])
+        gps_coordinates = np.array(gps[i, 1:4])
+
+        # Calculate rotation matrix
+        rotation_matrix = gps_rotation_matrix(
+            heading=angles[2], pitch=angles[1], roll=angles[0])
+
+        # Select by profile number
+        results_by_profile = result[result[:, 0] == i, :][:, 1:]
+
+        # Apply transformation to points belonging to that profiles
+        for j in range(results_by_profile.shape[0]):
+            gps_result[counter] = np.array(
+                [0, *(results_by_profile[j].dot(rotation_matrix) + gps_coordinates)])
+            counter += 1
+
+    return gps_result
+
+
+def gps_rotation_matrix(heading, pitch, roll):
     """
-    :return: Nothing
+    Utility function to calculate rotation matrix
     """
+    Rheading = np.array([
+        [m.cos(heading), -m.sin(heading), 0],
+        [m.sin(heading), m.cos(heading), 0],
+        [0, 0, 1]
+    ])
+
+    Rpitch = np.array([
+        [m.cos(pitch), 0, m.sin(pitch)],
+        [0, 1, 0],
+        [-m.sin(pitch), 0, m.cos(pitch)],
+    ])
+
+    Rroll = np.array([
+        [1, 0, 0],
+        [0, m.cos(roll), -m.sin(roll)],
+        [0, m.sin(roll), m.cos(roll)],
+    ])
+
+    return Rheading * Rpitch * Rroll
 
 
 def next():
@@ -183,14 +319,14 @@ lbl_vis3D.pack(pady=20)
 lbl_vis3D.pack(pady=20)
 
 
-btn_back = tk.Button(plot3D_frame,
-                     text='Back home',
-                     bg='#2980b9',
-                     fg='#000000',
-                     relief='flat',
-                     font=font_small,
-                     command=back)
-btn_back.pack(pady=20)
+# btn_back = tk.Button(plot3D_frame,
+#                    text='Back home',
+#                   bg='#2980b9',
+#                  fg='#000000',
+#                 relief='flat',
+#                font=font_small,
+#               command=back)
+# btn_back.pack(pady=20)
 
 btn_georef = tk.Button(plot3D_frame,
                        text='Georefrencing',
@@ -198,7 +334,7 @@ btn_georef = tk.Button(plot3D_frame,
                        fg='#000000',
                        relief='flat',
                        font=font_small,
-                       command=georef)
+                       command=lambda: plot(georeference()))
 btn_georef.pack(pady=20)
 
 
