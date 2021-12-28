@@ -3,8 +3,8 @@ import os
 import numpy as np
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
-import tkinter as tk             # This has all the code for GUIs.
-import tkinter.font as font      # This lets us use different fonts.
+import tkinter as tk
+import tkinter.font as font
 from tkinter import ttk
 from tkinter.filedialog import askopenfile, askopenfilenames
 import matplotlib
@@ -22,12 +22,7 @@ def center_window_on_screen():
 
 
 def import_scanner():
-    """ files = askopenfilenames(filetypes=(('Text files', '*.txt'),
-                                        ('All files', '*.*')),
-                             title='Select Input File'
-                             )
-    fileList = root.tk.splitlist(files)
-    print('Files = ', fileList) """
+
     global scanner_files
     scanner_files = open_multiple_files()
     e1.insert(0, ", ".join(scanner_files))
@@ -92,8 +87,6 @@ def preprocess():
 
     merged = merged[np.lexsort((merged[:, 0], merged[:, 1]))]
 
-    # We keep only 4 columns: (profile, X, Y, Z)
-
     merged = merged[:, 1:5]
 
     preprocessed = merged
@@ -139,9 +132,7 @@ def georeference():
 
 
 def gps_rotation_matrix(heading, pitch, roll):
-    """
-    Utility function to calculate rotation matrix
-    """
+
     Rheading = np.array([
         [m.cos(heading), -m.sin(heading), 0],
         [m.sin(heading), m.cos(heading), 0],
