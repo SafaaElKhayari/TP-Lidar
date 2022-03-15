@@ -1,3 +1,3 @@
 # Visualisation-Lidar-data-
 
-This Project aims to georeferencing lidar data and then visualize it using python
+This Project aims to georeference lidar data and then visualize it using python
